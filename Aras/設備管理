@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>testttt</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+      
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>
+
+
+Innovator inn = this.getInnovator();
+List<string> list_1 = new List<string>();
+string actId = this.getID();
+string user = this.getProperty("br_people");
+string datetest = this.getProperty("created_on");
+DateTime date = DateTime.Parse(this.getProperty("created_on",""));
+string text = this.getProperty("text");
+Item eq = inn.newItem("EQ","get");
+eq.setProperty("source_id",actId);
+eq=eq.apply();  //頁簽
+Item eqq = inn.newItem("Equip management","get");
+eqq=eqq.apply(); //設備
+string test="";
+for(int i=0;i<eq.getItemCount();i++){
+    for(int j=0;j<eqq.getItemCount();j++){
+    Item ftemp = eq.getItemByIndex(i); //頁簽
+    Item temp = eqq.getItemByIndex(j); //設備
+    if( this.getProperty("action","")=="borrow"){
+        ftemp=ftemp.getItemsByXPath("related_id/Item");
+        if(ftemp.getProperty("keyed_name")==temp.getProperty("keyed_name")){
+            string check = ftemp.getProperty("keyed_name");
+            list_1.Add(check);
+            if(temp.getProperty("using")=="使用中"){
+                return inn.newError("有設備使用中，請重新確認。");
+            }
+            else if(temp.getProperty("using")=="報廢"){
+                return inn.newError("有設備報廢，請重新確認。");
+            }
+            Item eqqq = ftemp.newItem("Equip management","edit");
+            eqqq.setAttribute("where","[Equip_management].keyed_name="+temp.getProperty("keyed_name"));
+            eqqq.setProperty("using","使用中");
+            eqqq.setProperty("userrr",user);
+            eqqq=eqqq.apply();
+            Item eqqqq = ftemp.newItem("Equip management","get");
+     eqqqq.setAttribute("where","[Equip_management].keyed_name="+temp.getProperty("keyed_name"));
+     string eqid = eqqqq.getID();
+     Item re = eqqqq.createRelationship("remember","add");
+     re.setProperty("source_id",eqid);
+     string aid =re.getProperty("another_id");
+     //return inn.newError(""+re.getItemCount());
+    //  Item course = re.createRelatedItem("record","edit");
+    //  course.setAttribute("select","another_id");
+    //  course.setProperty("another_id",aid);
+    //  course.setProperty("change_people",user);
+    //  course.setProperty("borrow_date",date.ToString());
+    //  course=course.apply();
+     //return inn.newError(""+course.getItemCount());
+        //return inn.newError(course.node.OuterXml);
+        }
+    }
+    //     }
+    else if (this.getProperty("action", "") == "return") { //歸還
+        ftemp = ftemp.getItemsByXPath("related_id/Item");
+
+        if (ftemp.getProperty("keyed_name") == temp.getProperty("keyed_name")) {
+            string check = ftemp.getProperty("keyed_name");
+            list_1.Add(check);
+            test+=" "+check;
+            if (temp.getProperty("using") == "報廢") {
+                return inn.newError("有設備已報，請重新確認廢。");
+            }
+            if (temp.getProperty("using") == "空閒") {
+                return inn.newError("有設備已為空閒，請重新確認。");
+            } else if (this.getProperty("br_people") != ftemp.getProperty("userrr")) {
+                return inn.newError("持有人與申請歸還者不同，請重新確認。");
+            }
+        }
+        Item eqqq = inn.newItem("Equip management", "edit");
+        eqqq.setAttribute("where", "[Equip_management].keyed_name=" + temp.getProperty("keyed_name"));
+        eqqq.setProperty("using", "空閒");
+        eqqq.setProperty("userrr", "");
+        eqqq = eqqq.apply();
+    } else if (this.getProperty("action", "") == "Delete") {
+        ftemp = ftemp.getItemsByXPath("related_id/Item");
+        string check = ftemp.getProperty("keyed_name");
+        list_1.Add(check);
+        if (ftemp.getProperty("keyed_name") == temp.getProperty("keyed_name")) {
+            list_1.Add(check);
+            test+=" "+check;
+            if (temp.getProperty("using") == "使用中") {
+                return inn.newError("請先歸還設備，請重新確認。");
+            } else if (temp.getProperty("using") == "報廢") {
+                return inn.newError("有設備已報廢，請重新確認。");
+            }
+            Item eqqq = inn.newItem("Equip management", "edit");
+        eqqq.setAttribute("where", "[Equip_management].keyed_name=" + temp.getProperty("keyed_name"));
+        eqqq.setProperty("using", "報廢");
+        eqqq.setProperty("userrr", "");
+        eqqq.setProperty("end_date",date.ToString());
+        eqqq.setProperty("deal",text);
+        eqqq = eqqq.apply();
+        }
+    }
+    }
+}
+for(int z=0;z<eq.getItemCount();z++){
+    for(int k=z+1;k<eq.getItemCount();k++){
+        if(list_1[z]==list_1[k]){
+        return inn.newError("有重複物件，請重新確認。");
+            }
+        }
+}
+return this;
